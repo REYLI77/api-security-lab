@@ -1,0 +1,34 @@
+name: DAST API Security Scan
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  zap:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download crAPI config
+        run: |
+          curl -L -o docker-compose.yml https://raw.githubusercontent.com/OWASP/crAPI/main/deploy/docker/docker-compose.yml
+          curl -L -o .env https://raw.githubusercontent.com/OWASP/crAPI/main/deploy/docker/.env
+
+      - name: Start crAPI
+        run: |
+          docker compose --compatibility up -d
+
+      - name: Wait for crAPI
+        run: |
+          sleep 60
+
+      - name: ZAP Full Scan
+        uses: zaproxy/action-full-scan@v0.13.0
+        with:
+          target: 'http://localhost:8888'
+          cmd_options: '-a -m 15'
+          fail_action: false
